@@ -20,6 +20,9 @@ PLUGINS=(
   zsh-users/zsh-syntax-highlighting
   zsh-users/zsh-completions
 )
+# Só estes dois arquivos do oh-my-zsh (MIT), para manter os mesmos aliases.
+OMZ_PLUGINS=(git kubectl)
+OMZ_RAW=https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/plugins
 
 WITH_PACKAGES=1 WITH_RELEASES=1 WITH_SHELL=1 WITH_CHSH=1
 
@@ -105,6 +108,15 @@ install_plugins() {
       run git -C "$dir" pull -q --ff-only && ok "${repo#*/} atualizado"
     else
       run git clone -q --depth 1 "https://github.com/$repo.git" "$dir" && ok "${repo#*/}"
+    fi
+  done
+  run mkdir -p "$DEVKIT_DATA/plugins/omz"
+  local p
+  for p in "${OMZ_PLUGINS[@]}"; do
+    if run curl -fsSL "$OMZ_RAW/$p/$p.plugin.zsh" -o "$DEVKIT_DATA/plugins/omz/$p.plugin.zsh"; then
+      ok "aliases $p do oh-my-zsh"
+    else
+      warn "não consegui baixar o plugin $p do oh-my-zsh"
     fi
   done
 }

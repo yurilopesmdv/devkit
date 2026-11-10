@@ -105,5 +105,44 @@ check "duração" "$(_devkit_format_duration 75)" "1m15s"
 ( exit 3 ); _devkit_precmd
 check "código de saída" "$PROMPT" "✘ 3"
 
+# Hash curto e ✔ quando em dia
+cd "$tmp/work" && git checkout -q main 2>/dev/null && git reset -q --hard origin/main
+seg=$(_devkit_segment_git)
+check "hash curto" "$seg" "$(git rev-parse --short=7 HEAD)"
+check "limpo e em dia: ✔" "$seg" "✔"
+DEVKIT_PROMPT_SHA=0
+check_not "hash desligado" "$(_devkit_segment_git)" "$(git rev-parse --short=7 HEAD)"
+unset DEVKIT_PROMPT_SHA
+
+# Ambientes: homologação amarelo
+check "cor qa" "$(_devkit_env_color cluster-qa)" "yellow"
+check "cor hml" "$(_devkit_env_color app-HML)" "yellow"
+check "cor dev" "$(_devkit_env_color kind-dev)" "green"
+
+# AWS
+AWS_PROFILE=empresa-prod AWS_REGION=sa-east-1
+check "aws prod" "$(_devkit_segment_aws)" "%F{red}☁ empresa-prod(sa-east-1)%f"
+unset AWS_PROFILE AWS_REGION
+check "aws sem perfil" "x$(_devkit_segment_aws)" "x"
+
+# Usuário
+check "usuário" "$(_devkit_segment_user)" "%n%f"
+check_not "sem host fora de SSH" "$(SSH_CONNECTION= SSH_TTY= _devkit_segment_user)" "%m"
+check "host em SSH" "$(SSH_CONNECTION='1 2 3 4' _devkit_segment_user)" "%m"
+
+# Linguagens: node só com package.json
+mkdir -p "$tmp/nodeproj" && cd "$tmp/nodeproj"
+if (( $+commands[node] )); then
+  check_not "sem package.json" "$(_devkit_segment_langs)" "⬢"
+  print '{}' > package.json
+  check "node com package.json" "$(_devkit_segment_langs)" "⬢ "
+fi
+
+# Linha completa
+_devkit_precmd
+check "prompt tem usuário" "$PROMPT" "%n"
+check "prompt tem data" "$RPROMPT" "%D{%a, %d %b}"
+check "prompt tem shrug" "$PROMPT" "ツ"
+
 print "prompt: $passed ok, $failures falha(s)"
 (( failures == 0 ))

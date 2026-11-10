@@ -40,8 +40,8 @@ cmd_doctor() {
 
   step "Plugins do zsh"
   local p
-  for p in zsh-autosuggestions zsh-syntax-highlighting zsh-completions; do
-    if [[ -d $DEVKIT_DATA/plugins/$p ]]; then ok "$p"; else warn "$p ausente (rode: devkit update)"; fi
+  for p in zsh-autosuggestions zsh-syntax-highlighting zsh-completions omz/git.plugin.zsh omz/kubectl.plugin.zsh; do
+    if [[ -e $DEVKIT_DATA/plugins/$p ]]; then ok "$p"; else warn "$p ausente (rode: devkit update)"; fi
   done
 
   step "Desempenho"
@@ -66,6 +66,11 @@ cmd_update() {
   local d
   for d in "$DEVKIT_DATA"/plugins/*/; do
     [[ -d $d/.git ]] && git -C "$d" pull -q --ff-only && ok "$(basename "$d")"
+  done
+  local p
+  for p in git kubectl; do
+    curl -fsSL "https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/plugins/$p/$p.plugin.zsh" \
+      -o "$DEVKIT_DATA/plugins/omz/$p.plugin.zsh" && ok "aliases $p do oh-my-zsh"
   done
   echo "  Rode 'exec zsh' para recarregar."
 }

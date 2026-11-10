@@ -26,10 +26,20 @@ bindkey '^[[A' up-line-or-beginning-search
 bindkey '^[[B' down-line-or-beginning-search
 bindkey '^[[1;5C' forward-word
 bindkey '^[[1;5D' backward-word
+bindkey '^[[H' beginning-of-line
+bindkey '^[[F' end-of-line
+bindkey '^[[3~' delete-char
+bindkey '^[[Z' reverse-menu-complete   # Shift+Tab volta no menu de completions
+setopt complete_in_word always_to_end
+zmodload zsh/parameter 2>/dev/null     # jobstates (✦ jobs no prompt)
 
 # Completions (zsh-completions + cache de 24h)
 [[ -d $DEVKIT_DATA/plugins/zsh-completions/src ]] && fpath=("$DEVKIT_DATA/plugins/zsh-completions/src" $fpath)
-autoload -Uz compinit
+# cache usado pelos plugins git/kubectl do oh-my-zsh
+export ZSH_CACHE_DIR=${ZSH_CACHE_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/zsh}
+mkdir -p "$ZSH_CACHE_DIR/completions"
+fpath=("$ZSH_CACHE_DIR/completions" $fpath)
+autoload -Uz compinit is-at-least
 _devkit_zcompdump=${XDG_CACHE_HOME:-$HOME/.cache}/zsh/zcompdump-$ZSH_VERSION
 mkdir -p "${_devkit_zcompdump:h}"
 if [[ -n $_devkit_zcompdump(#qN.mh+24) || ! -s $_devkit_zcompdump ]]; then
@@ -42,6 +52,14 @@ zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' use-cache on
 zstyle ':completion:*' cache-path "${XDG_CACHE_HOME:-$HOME/.cache}/zsh/compcache"
+
+# Plugins git e kubectl do oh-my-zsh (só os dois arquivos, baixados no install):
+# mantêm todos os ~300 aliases de antes. Os nossos vêm depois e completam.
+git_current_branch() { command git symbolic-ref --quiet --short HEAD 2>/dev/null || command git rev-parse --short HEAD 2>/dev/null }
+for _devkit_plugin in git kubectl; do
+  [[ -r $DEVKIT_DATA/plugins/omz/$_devkit_plugin.plugin.zsh ]] && \
+    source "$DEVKIT_DATA/plugins/omz/$_devkit_plugin.plugin.zsh"
+done
 
 source "$DEVKIT_HOME/zsh/aliases.zsh"
 source "$DEVKIT_HOME/zsh/tools.zsh"

@@ -14,10 +14,10 @@ cd ~/devkit && ./install.sh --dry-run   # veja o que vai acontecer
 
 | | |
 |---|---|
-| **Prompt** | pasta atual, branch colorida pelo estado, contadores de arquivos, ↑↓ em relação ao remoto, stash, contexto do Kubernetes, workspace do Terraform, venv do Python, tempo de comandos lentos e código de erro. Uma única chamada ao `git` por prompt. |
+| **Prompt** | usuário (vermelho se root; host em SSH), pasta, branch colorida pelo estado com hash curto, contadores, ↑↓ do remoto, stash, ✔ quando limpo, contexto/namespace do Kubernetes, perfil da AWS, workspace do Terraform (prod vermelho, qa/hml amarelo), versões de node/rust/go dentro de projetos, venv, jobs em segundo plano, tempo de comandos lentos, código de erro, data e hora, título da janela. Uma chamada ao `git` por prompt. |
 | **Ferramentas** | `fzf`, `ripgrep`, `fd`, `bat`, `eza`, `zoxide`, `delta`, `lazygit`, `yq`, `jq`, `direnv`, `tmux`, `btop`/`htop`, `tree` |
-| **zsh** | autosuggestions, syntax highlighting, completions extras com cache, histórico grande e compartilhado, busca no histórico com ↑/↓ |
-| **Aliases** | git (`gs`, `gcm`, `gpu`, `glog`, `gbf` troca de branch com fzf), docker, kubectl, `ll`/`lt` com ícones — só criados se a ferramenta existir |
+| **zsh** | autosuggestions, syntax highlighting, completions extras com cache (inclusive aws, terraform, az, helm, kubectl), histórico grande e compartilhado, busca com ↑/↓, Shift+Tab, pilha de diretórios (`d`, `1`–`9`), asdf e Homebrew/Linuxbrew se existirem |
+| **Aliases** | **todos** os do oh-my-zsh para git (204) e kubectl (118) — `gst`, `gcmsg`, `gpsup`, `kgp`, `kcuc`… — sem precisar do oh-my-zsh; mais docker, terraform, azure, `pkgi`/`pkgu` (mesmo comando em qualquer distro), `take`, `gbf` (branch com fzf), `pbcopy`/`pbpaste` e `open` no WSL. Só são criados se a ferramenta existir. |
 | **`devkit`** | `doctor`, `update`, `ports`, `extract`, `serve`, `wsl dns` |
 
 ### Cores do prompt
@@ -30,6 +30,10 @@ cd ~/devkit && ./install.sh --dry-run   # veja o que vai acontecer
 | 🔵 ciano | em dia com o remoto |
 
 Outros sinais: `●` staged · `✖` conflitos · `≡` stashes · `(local)` branch sem upstream · contexto do k8s e workspace do Terraform ficam **vermelhos quando o nome contém `prod`**.
+
+### Vindo do oh-my-zsh?
+
+O devkit cobre o que um setup típico de oh-my-zsh faz e abre mais rápido (medido aqui: **163 ms** contra 197 ms com oh-my-zsh + git/kubectl/autosuggestions/syntax-highlighting). Dos plugins do oh-my-zsh, só os arquivos `git` e `kubectl` são baixados (licença MIT) para manter os aliases idênticos.
 
 ## Distros
 
