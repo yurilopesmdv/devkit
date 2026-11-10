@@ -168,7 +168,13 @@ main() {
   [[ $DRY_RUN == 1 ]] && warn "modo --dry-run: nada será alterado"
 
   MISSING_TOOLS=()
-  [[ $WITH_PACKAGES == 1 ]] && install_packages
+  if [[ $WITH_PACKAGES == 1 ]]; then
+    install_packages
+  else
+    # sem pacotes (ex.: sem sudo): ainda dá para baixar o que falta para ~/.local/bin
+    local tool
+    for tool in "${RELEASE_FALLBACK[@]}"; do has "$tool" || MISSING_TOOLS+=("$tool"); done
+  fi
   [[ $WITH_RELEASES == 1 && ${#MISSING_TOOLS[@]} -gt 0 ]] && install_releases
   if [[ $WITH_SHELL == 1 ]]; then
     has git || [[ $DRY_RUN == 1 ]] || fail "git é necessário para os plugins"
