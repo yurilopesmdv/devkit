@@ -1,0 +1,129 @@
+#!/usr/bin/env bash
+# devkit — utilitários do dia a dia.  `devkit help` para a lista.
+set -euo pipefail
+
+SELF=$(readlink -f "${BASH_SOURCE[0]}")
+DEVKIT_HOME=$(cd "$(dirname "$SELF")/.." && pwd)
+# shellcheck source=../lib/common.sh
+. "$DEVKIT_HOME/lib/common.sh"
+
+cmd_help() {
+  cat <<'EOF'
+devkit <comando>
+
+  doctor        confere ferramentas, plugins e o tempo de abrir o zsh
+  update        atualiza o devkit (git pull) e os plugins do zsh
+  ports         lista quem está escutando em cada porta
+  extract <arq> extrai qualquer compactado (.tar.gz, .zip, .7z, ...)
+  serve [porta] servidor HTTP estático na pasta atual (padrão 8000)
+  wsl dns       corrige o DNS do WSL (resolv.conf fixo com 1.1.1.1/8.8.8.8)
+  help          esta ajuda
+EOF
+}
+
+cmd_doctor() {
+  detect_os
+  step "Sistema"
+  ok "$OS_ID${PKG:+ ($PKG)}$([[ $IS_WSL == 1 ]] && echo ' · WSL') · $(uname -m)"
+  ok "shell padrão: ${SHELL:-?}"
+
+  step "Ferramentas"
+  local t alt
+  for t in git zsh fzf rg fd bat eza zoxide jq yq delta lazygit direnv tmux btop htop docker kubectl; do
+    alt=$t
+    [[ $t == fd ]] && ! has fd && has fdfind && alt=fdfind
+    [[ $t == bat ]] && ! has bat && has batcat && alt=batcat
+    if has "$alt"; then ok "$t ${C_DIM}$(command -v "$alt")${C_RESET}"
+    else warn "$t não instalado"
+    fi
+  done
+
+  step "Plugins do zsh"
+  local p
+  for p in zsh-autosuggestions zsh-syntax-highlighting zsh-completions; do
+    if [[ -d $DEVKIT_DATA/plugins/$p ]]; then ok "$p"; else warn "$p ausente (rode: devkit update)"; fi
+  done
+
+  step "Desempenho"
+  if has zsh; then
+    local start end
+    start=$(date +%s%N)
+    zsh -i -c exit >/dev/null 2>&1 || true
+    end=$(date +%s%N)
+    ok "zsh abre em $(( (end - start) / 1000000 )) ms"
+  fi
+  grep -q 'gerado pelo devkit' "$HOME/.zshrc" 2>/dev/null && ok "~/.zshrc gerenciado pelo devkit" || warn "~/.zshrc não usa o devkit (rode ./install.sh)"
+}
+
+cmd_update() {
+  step "devkit"
+  git -C "$DEVKIT_HOME" pull --ff-only && ok "atualizado"
+  step "Plugins"
+  local d
+  for d in "$DEVKIT_DATA"/plugins/*/; do
+    [[ -d $d/.git ]] && git -C "$d" pull -q --ff-only && ok "$(basename "$d")"
+  done
+  echo "  Rode 'exec zsh' para recarregar."
+}
+
+cmd_ports() {
+  if has ss; then ss -tulpn 2>/dev/null | awk 'NR==1 || /LISTEN/'
+  else netstat -tulpn 2>/dev/null
+  fi
+}
+
+cmd_extract() {
+  local f=${1:?uso: devkit extract <arquivo>}
+  [[ -f $f ]] || fail "arquivo não encontrado: $f"
+  case $f in
+    *.tar.gz|*.tgz) tar -xzf "$f" ;;
+    *.tar.bz2|*.tbz2) tar -xjf "$f" ;;
+    *.tar.xz|*.txz) tar -xJf "$f" ;;
+    *.tar.zst) tar --zstd -xf "$f" ;;
+    *.tar) tar -xf "$f" ;;
+    *.zip) unzip -q "$f" ;;
+    *.gz) gunzip -k "$f" ;;
+    *.bz2) bunzip2 -k "$f" ;;
+    *.xz) unxz -k "$f" ;;
+    *.7z) has 7z || fail "instale o p7zip"; 7z x "$f" ;;
+    *.rar) has unrar || fail "instale o unrar"; unrar x "$f" ;;
+    *) fail "formato não suportado: $f" ;;
+  esac
+  ok "extraído: $f"
+}
+
+cmd_serve() {
+  local port=${1:-8000}
+  has python3 || fail "precisa do python3"
+  echo "Servindo $(pwd) em http://localhost:$port  (Ctrl+C para parar)"
+  exec python3 -m http.server "$port"
+}
+
+cmd_wsl() {
+  detect_os
+  [[ $IS_WSL == 1 ]] || fail "isto só faz sentido dentro do WSL"
+  case ${1:-} in
+    dns)
+      step "DNS do WSL"
+      if ! grep -q 'generateResolvConf *= *false' /etc/wsl.conf 2>/dev/null; then
+        as_root sh -c 'printf "\n[network]\ngenerateResolvConf = false\n" >> /etc/wsl.conf'
+        ok "/etc/wsl.conf: generateResolvConf = false"
+      fi
+      as_root sh -c 'rm -f /etc/resolv.conf && printf "nameserver 1.1.1.1\nnameserver 8.8.8.8\n" > /etc/resolv.conf'
+      ok "/etc/resolv.conf fixo (1.1.1.1, 8.8.8.8)"
+      echo "  Se usar VPN corporativa, ajuste os nameservers em /etc/resolv.conf."
+      ;;
+    *) fail "uso: devkit wsl dns" ;;
+  esac
+}
+
+case ${1:-help} in
+  doctor) cmd_doctor ;;
+  update) cmd_update ;;
+  ports) cmd_ports ;;
+  extract) shift; cmd_extract "$@" ;;
+  serve) shift; cmd_serve "$@" ;;
+  wsl) shift; cmd_wsl "$@" ;;
+  help|-h|--help) cmd_help ;;
+  *) cmd_help; exit 1 ;;
+esac

@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-test:
+    name: Lint e testes do prompt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dependências
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck zsh
+      - name: ShellCheck
+        run: shellcheck -x install.sh uninstall.sh bin/devkit lib/*.sh
+      - name: Sintaxe do zsh
+        run: for f in zsh/*.zsh tests/*.zsh; do zsh -n "$f"; done
+      - name: Testes do prompt
+        run: zsh tests/prompt_test.zsh
+
+  install:
+    name: Instalação em ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["ubuntu:20.04", "ubuntu:24.04", "debian:12", "fedora:41", "archlinux:latest"]
+    container: ${{ matrix.image }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Dry-run
+        run: ./install.sh --dry-run --no-chsh
+      - name: Instalação real
+        run: ./install.sh --no-chsh
+      - name: devkit doctor e prompt num repositório
+        shell: bash
+        run: |
+          mkdir -p /tmp/repo && cd /tmp/repo && git init -q && echo x > f
+          zsh -i -c 'devkit doctor && _devkit_precmd && print -P -- "$PROMPT"'
+          zsh -i -c '_devkit_precmd; [[ $PROMPT == *"?1"* ]]' || { echo "prompt sem o contador de arquivo novo"; exit 1; }
