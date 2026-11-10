@@ -144,7 +144,7 @@ export DEVKIT_HOME="$DEVKIT_HOME"
 source "\$DEVKIT_HOME/zsh/devkit.zsh"
 EOF
   fi
-  ok "~/.zshrc aponta para $DEVKIT_HOME"
+  ok "$HOME/.zshrc aponta para $DEVKIT_HOME"
 
   run mkdir -p "$DEVKIT_BIN"
   run ln -sf "$DEVKIT_HOME/bin/devkit" "$DEVKIT_BIN/devkit"

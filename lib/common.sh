@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Funções compartilhadas pelo install.sh, uninstall.sh e bin/devkit.
+# shellcheck disable=SC2034  # OS_ID, IS_WSL, ARCH etc. são lidos por quem faz source
 
 DEVKIT_DATA=${DEVKIT_DATA:-${XDG_DATA_HOME:-$HOME/.local/share}/devkit}
 DEVKIT_CONFIG=${DEVKIT_CONFIG:-${XDG_CONFIG_HOME:-$HOME/.config}/devkit}
@@ -89,7 +90,7 @@ pkg_refresh() {
   case $PKG in
     apt) as_root apt-get update -qq ;;
     dnf) as_root dnf -q makecache ;;
-    pacman) as_root pacman -Sy --noconfirm ;;
+    pacman) as_root pacman -Syu --noconfirm ;;  # Arch não suporta atualização parcial (-Sy sozinho)
     zypper) as_root zypper -q refresh ;;
     brew) run brew update ;;
   esac

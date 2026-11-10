@@ -4,7 +4,7 @@ set -euo pipefail
 
 SELF=$(readlink -f "${BASH_SOURCE[0]}")
 DEVKIT_HOME=$(cd "$(dirname "$SELF")/.." && pwd)
-# shellcheck source=../lib/common.sh
+# shellcheck source=lib/common.sh disable=SC1091
 . "$DEVKIT_HOME/lib/common.sh"
 
 cmd_help() {
@@ -52,7 +52,11 @@ cmd_doctor() {
     end=$(date +%s%N)
     ok "zsh abre em $(( (end - start) / 1000000 )) ms"
   fi
-  grep -q 'gerado pelo devkit' "$HOME/.zshrc" 2>/dev/null && ok "~/.zshrc gerenciado pelo devkit" || warn "~/.zshrc não usa o devkit (rode ./install.sh)"
+  if grep -q 'gerado pelo devkit' "$HOME/.zshrc" 2>/dev/null; then
+    ok "$HOME/.zshrc gerenciado pelo devkit"
+  else
+    warn "$HOME/.zshrc não usa o devkit (rode ./install.sh)"
+  fi
 }
 
 cmd_update() {
